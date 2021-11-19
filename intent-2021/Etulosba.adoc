@@ -1,0 +1,50 @@
+= [Web] Etulosba 200 by Ron Masas
+:author: nxblnd
+:source-highlighter: pygments
+
+Writeup by nxblnd (_Zenbuai-gumi_, _:wq_)
+
+== Task
+
+Our spy managed to steal the source code for the Etulosba CDN. We need your help to get the flag from that server.
+
+There is an attachment:
+[source, js]
+----
+const fs = require("fs");
+const path = require("path");
+const express = require("express");
+
+const server = express();
+
+server.get("/", function (req, res) {
+    res.end("<html><body>etulosba</body></html>");
+});
+
+server.get("/files/images/:name", function (req, res) {
+    if (req.params.name.indexOf(".") === -1) {
+        return res.status(400).json({ error: "invalid file name" });
+    }
+
+    res.sendFile(__dirname + path.join("/files/images/", req.params.name));
+});
+
+server.get("/files/binary/:name", function (req, res) {
+    if (req.params.name.indexOf(".") !== -1) {
+        return res.status(400).json({ error: "invalid file name" });
+    }
+
+    res.sendFile(path.resolve(__dirname, "/files/binary/", req.params.name));
+});
+
+fs.writeFileSync(path.join(__dirname, "flag.name"), process.env.FLAG_NAME);
+fs.writeFileSync(path.join("/tmp", process.env.FLAG_NAME), process.env.FLAG);
+
+server.listen(process.env.HTTP_PORT);
+----
+
+== How to solve
+
+If you try to traverse directories with `../` you will face the following problem: dots are resolved before the file is fetched, so you\'ll just try accessing a non-existing endpoint.
+
+Just URL encode your path, like so: `../` -> `%2E%2E%2F` and you are good to go. Also check what methods are called: look explanations with extended examples in Express' docs, and try this filenames: `../../flag.name` as `%2E%2E%2F%2E%2E%2Fflag%2Ename` for `/files/images/` and `/tmp/imaflagimaflag` as `%2Ftmp%2Fimaflagimaflag` for `/files/binaries/`.
